@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AQUA | Premium Marketplace</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 font-sans antialiased text-slate-800">
+
+    <div class="bg-white border-b border-gray-100 text-xs text-gray-500 py-2 hidden sm:block">
+        <div class="max-w-7xl mx-auto px-4 flex justify-between items-center">
+            <div class="flex space-x-4">
+                <a href="{% url 'product_list' %}" class="hover:text-rose-500 transition">Blog</a>
+                <a href="{% url 'product_list' %}" class="hover:text-rose-500 transition">Featured Products</a>
+                <a href="{% url 'wishlist_detail' %}" class="hover:text-rose-500 transition">Wishlist</a>
+            </div>
+            <div class="flex space-x-6">
+                <a href="/admin/" class="hover:text-rose-500 transition font-bold text-slate-700">⚙️ Admin Dashboard</a>
+                <a href="{% url 'product_list' %}" class="hover:text-rose-500 transition">Sign Up</a>
+                <a href="{% url 'product_list' %}" class="hover:text-rose-500 transition">My Account</a>
+                <a href="{% url 'product_list' %}" class="hover:text-rose-500 transition">Order Tracking</a>
+                <span class="cursor-pointer hover:text-rose-500">INR ▼</span>
+                <span class="cursor-pointer hover:text-rose-500">English ▼</span>
+            </div>
+        </div>
+    </div>
+
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between gap-6">
+            <a href="{% url 'product_list' %}" class="text-3xl font-black tracking-widest text-slate-900">
+                MY<span class="text-indigo-600">STORE</span>
+            </a>
+
+            <div class="flex-1 max-w-3xl flex items-center gap-2">
+                <form action="{% url 'product_list' %}" method="get" class="m-0 flex flex-1 relative items-center">
+                    <input type="text" name="q" value="{{ query }}" placeholder="Search for products, brands, styles..." 
+                           class="w-full bg-slate-50 text-sm px-5 py-2.5 pr-12 rounded-l-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 border border-gray-200 border-r-0">
+                    
+                    {% if query %}
+                        <a href="?{% if category_slug %}category={{ category_slug }}{% endif %}{% if min_price %}&min_price={{ min_price }}{% endif %}{% if max_price %}&max_price={{ max_price }}{% endif %}" 
+                           class="absolute right-4 text-xs font-bold text-gray-400 hover:text-rose-500 transition" title="Clear keyword search">
+                            ✕
+                        </a>
+                    {% endif %}
+
+                    {% if category_slug %}<input type="hidden" name="category" value="{{ category_slug }}">{% endif %}
+                    {% if min_price %}<input type="hidden" name="min_price" value="{{ min_price }}">{% endif %}
+                    {% if max_price %}<input type="hidden" name="max_price" value="{{ max_price }}">{% endif %}
+                    
+                    <button type="submit" class="bg-rose-500 hover:bg-rose-600 text-white font-bold px-7 py-2.5 h-full rounded-r-xl transition text-sm tracking-wide shadow-sm">
+                        Search
+                    </button>
+                </form>
+
+                {% if query or category_slug or min_price or max_price or is_wishlist_page %}
+                    <a href="{% url 'product_list' %}" class="bg-slate-100 hover:bg-red-50 hover:text-red-600 border border-gray-200 text-slate-600 text-xs font-bold px-4 py-2.5 rounded-xl transition whitespace-nowrap flex items-center gap-1.5 shadow-sm">
+                        <span>✕</span> Clear All
+                    </a>
+                {% endif %}
+            </div>
+
+            <div class="flex items-center space-x-6">
+                <div onclick="alert('Geo-location service initialized. Fetching nearby delivery hubs...')" 
+                     class="hidden lg:flex items-center space-x-2 text-xs border border-gray-100 p-2 rounded-xl bg-gray-50/50 cursor-pointer hover:bg-gray-100 transition">
+                    <span class="text-base text-rose-500">📍</span>
+                    <div>
+                        <p class="text-gray-400 font-medium">Deliver to</p>
+                        <p class="font-bold text-slate-800">Select Location</p>
+                    </div>
+                </div>
+
+                <a href="{% url 'wishlist_detail' %}" class="relative p-2 text-slate-700 hover:text-rose-500 transition {% if is_wishlist_page %}text-rose-500{% endif %}" title="View Wishlist">
+                    <span class="text-xl">❤️</span>
+                    <span class="absolute -top-1 -right-1 bg-slate-900 text-white font-bold text-[10px] w-4 h-4 rounded-full flex items-center justify-center shadow">
+                        {{ request.session.wishlist|length|default:"0" }}
+                    </span>
+                </a>
+
+                <a href="{% url 'cart_detail' %}" class="relative p-2 text-slate-700 hover:text-rose-500 transition flex items-center space-x-2">
+                    <span class="text-xl">🛒</span>
+                    <span class="absolute top-1 left-6 bg-rose-500 text-white font-bold text-[10px] w-4 h-4 rounded-full flex items-center justify-center shadow">
+                        {% if cart %}{{ cart.cart.items|length }}{% else %}0{% endif %}
+                    </span>
+                    <div class="text-xs hidden md:block text-left pl-1">
+                        <p class="text-gray-400 leading-none">Total</p>
+                        <p class="font-bold text-slate-800 mt-0.5">Rs. {{ cart.get_total_price|default:"0.00" }}</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <div class="bg-slate-900 text-white text-xs font-semibold uppercase tracking-wider">
+            <div class="max-w-7xl mx-auto px-4 h-12 flex items-center space-x-8">
+                <a href="{% url 'product_list' %}" class="hover:text-rose-400 transition {% if not category_slug and not is_wishlist_page %}text-rose-400 py-3 border-b-2 border-rose-400{% endif %}">Home</a>
+                <a href="?category=electronics" class="hover:text-rose-400 transition py-3 {% if category_slug == 'electronics' %}text-rose-400{% endif %}">Electronics</a>
+                <a href="?category=womens-fashion" class="hover:text-rose-400 transition py-3 {% if category_slug == 'womens-fashion' %}text-rose-400{% endif %}">Women ▾</a>
+                <a href="?category=mens-fashion" class="hover:text-rose-400 transition py-3 {% if category_slug == 'mens-fashion' %}text-rose-400{% endif %}">Men</a>
+                <a href="?category=sports" class="hover:text-rose-400 transition py-3 relative {% if category_slug == 'sports' %}text-rose-400{% endif %}">
+                    Sports <span class="absolute -top-2 -right-6 bg-rose-500 text-[8px] px-1 rounded-sm text-white animate-pulse">New</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <section class="max-w-7xl mx-auto px-4 mt-6">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden hidden lg:block">
+                <div class="bg-rose-500 text-white px-5 py-3.5 font-bold text-sm uppercase tracking-wide flex items-center justify-between">
+                    <span>☰ All Departments</span>
+                </div>
+                <div class="divide-y divide-gray-50 text-xs font-medium text-slate-600">
+                    <a href="?{% if query %}q={{ query }}{% endif %}" class="px-5 py-3 flex justify-between items-center hover:bg-slate-50 hover:text-indigo-600 transition {% if not category_slug and not is_wishlist_page %}bg-indigo-50/40 text-indigo-600 font-bold{% endif %}">
+                        <span>✨ All Categories</span>
+                    </a>
+                    {% for cat in categories %}
+                        <a href="?category={{ cat.slug }}{% if query %}&q={{ query }}{% endif %}{% if min_price %}&min_price={{ min_price }}{% endif %}{% if max_price %}&max_price={{ max_price }}{% endif %}" 
+                           class="px-5 py-3 flex justify-between items-center hover:bg-slate-50 hover:text-indigo-600 transition {% if category_slug == cat.slug %}bg-indigo-50/50 text-indigo-600 font-bold{% endif %}">
+                            <span>📦 {{ cat.name }}</span> <span>❯</span>
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="lg:col-span-3 bg-slate-100 rounded-2xl overflow-hidden relative min-h-[380px] flex items-center px-12 lg:px-20 border border-gray-200/60 shadow-sm bg-cover bg-center" style="background-image: linear-gradient(to right, rgba(248,250,252,0.95), rgba(248,250,252,0.6)), url('https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=1200');">
+                <div class="max-w-md space-y-4">
+                    <span class="bg-indigo-900 text-white text-[10px] uppercase font-bold tracking-widest px-3 py-1 rounded-full">Shoes Fashion</span>
+                    <h2 class="text-4xl lg:text-5xl font-black text-slate-900 leading-tight">Come and Get It!<br><span class="text-indigo-600">BRAND NEW SHOES</span></h2>
+                    <p class="text-sm text-slate-500 font-medium">Upgrade your stride with ultra-responsive cushioning and sleek design elements.</p>
+                    <a href="?category=sports" class="inline-block bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs px-8 py-3.5 rounded-xl shadow-md shadow-rose-200 uppercase tracking-wider transition transform active:scale-95">Shop Now</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <main class="max-w-7xl mx-auto px-4 py-12">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-gray-200 pb-4 mb-8 gap-4">
+            <h2 class="text-2xl font-black text-slate-900 flex items-center space-x-2">
+                <span class="text-indigo-600">✦</span> 
+                <span>
+                    {% if is_wishlist_page %}
+                        My Saved Wishlist ❤️
+                    {% elif category_slug %}
+                        {{ category_slug|title }} Collection
+                    {% else %}
+                        Trending Products
+                    {% endif %}
+                </span>
+            </h2>
+
+            <form action="{% url 'product_list' %}" method="get" class="m-0 flex items-center space-x-2 bg-white p-1 border border-gray-200 rounded-xl shadow-sm">
+                {% if query %}<input type="hidden" name="q" value="{{ query }}">{% endif %}
+                {% if category_slug %}<input type="hidden" name="category" value="{{ category_slug }}">{% endif %}
+                <input type="number" name="min_price" value="{{ min_price }}" placeholder="Min Price" class="w-20 border-0 bg-transparent text-xs p-1.5 focus:outline-none focus:ring-0">
+                <span class="text-gray-300">|</span>
+                <input type="number" name="max_price" value="{{ max_price }}" placeholder="Max Price" class="w-20 border-0 bg-transparent text-xs p-1.5 focus:outline-none focus:ring-0">
+                
+                {% if min_price or max_price %}
+                    <a href="?{% if query %}q={{ query }}{% endif %}{% if category_slug %}&category={{ category_slug }}{% endif %}" class="text-[10px] text-gray-400 hover:text-red-500 font-bold px-1 transition">Clear Price</a>
+                {% endif %}
+                <button type="submit" class="bg-slate-900 hover:bg-slate-800 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition">Apply</button>
+            </form>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <div class="lg:col-span-1 space-y-6">
+                <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-col justify-between h-full min-h-[450px]">
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center text-xs font-bold uppercase tracking-wider text-rose-500">
+                            <span>🔥 Limited Offer</span>
+                            <span class="bg-rose-100 text-rose-600 px-2 py-0.5 rounded shadow-sm">31% Off</span>
+                        </div>
+                        <h3 class="text-sm font-bold text-slate-900 leading-snug">Womens Summer Boho Floral Premium Collection</h3>
+                        <div class="w-full h-44 bg-slate-50 rounded-xl overflow-hidden shadow-inner">
+                            <img src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=400" alt="Promo" class="object-cover h-full w-full hover:scale-105 transition duration-500">
+                        </div>
+                    </div>
+                    <div class="pt-4 border-t border-gray-100 mt-4 space-y-3">
+                        <div class="flex items-baseline space-x-2">
+                            <span class="text-xl font-black text-rose-500">Rs. 10,564</span>
+                            <span class="text-xs text-gray-400 line-through">Rs. 16,477</span>
+                        </div>
+                        
+                        <div class="flex gap-1.5 text-center text-[10px] font-bold text-slate-700">
+                            <div class="bg-slate-50 border border-gray-100 py-1.5 rounded-lg flex-1"><span id="days-node">0</span><p class="text-gray-400 font-medium text-[8px]">Day</p></div>
+                            <div class="bg-slate-50 border border-gray-100 py-1.5 rounded-lg flex-1"><span id="hours-node">00</span><p class="text-gray-400 font-medium text-[8px]">Hrs</p></div>
+                            <div class="bg-slate-50 border border-gray-100 py-1.5 rounded-lg flex-1"><span id="minutes-node">00</span><p class="text-gray-400 font-medium text-[8px]">Min</p></div>
+                            <div class="bg-slate-50 border border-gray-100 py-1.5 rounded-lg flex-1"><span id="seconds-node">00</span><p class="text-gray-400 font-medium text-[8px]">Sec</p></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-3">
+                <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {% for product in products %}
+                        <div class="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden group hover:shadow-md transition duration-300 flex flex-col justify-between relative">
+                            <span class="absolute top-3 left-3 z-10 bg-slate-900 text-white font-bold text-[9px] uppercase px-2 py-0.5 rounded shadow-sm">Hot Deal</span>
+                            
+                            <a href="{% url 'wishlist_toggle' product.id %}" class="absolute top-3 right-3 z-10 bg-white/90 hover:bg-white text-slate-700 shadow-sm p-1.5 rounded-full text-xs transition select-none">
+                                {% if product.id in request.session.wishlist %}❤️{% else %}🤍{% endif %}
+                            </a>
+
+                            <div>
+                                <div class="w-full aspect-square bg-slate-50 flex items-center justify-center overflow-hidden relative">
+                                    {% if product.image %}
+                                        <img src="{{ product.image.url }}" alt="{{ product.name }}" class="object-cover w-full h-full group-hover:scale-105 transition duration-500">
+                                    {% else %}
+                                        <div class="text-gray-400 text-xs flex flex-col items-center">
+                                            <span class="text-3xl mb-1">📦</span> Image Coming Soon
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="p-5 space-y-1.5">
+                                    <span class="text-[10px] font-bold text-indigo-600 uppercase tracking-widest block">{{ product.category.name }}</span>
+                                    <h3 class="text-sm font-bold text-slate-800 group-hover:text-indigo-600 transition line-clamp-1">${product.name}</h3>
+                                    <div class="flex text-amber-400 text-[10px]">★★★★★ <span class="text-gray-400 font-medium pl-1">(142 reviews)</span></div>
+                                    <p class="text-xs text-gray-400 line-clamp-2 pt-0.5">{{ product.description }}</p>
+                                </div>
+                            </div>
+
+                            <div class="p-5 pt-0 mt-auto">
+                                <div class="flex items-center justify-between border-t border-gray-100 pt-4">
+                                    <span class="text-base font-black text-slate-900">Rs. {{ product.price }}</span>
+                                    <form action="{% url 'cart_add' product.id %}" method="post" class="m-0">
+                                        {% csrf_token %}
+                                        <button type="submit" class="bg-indigo-600 hover:bg-slate-900 text-white font-bold text-xs px-4 py-2 rounded-xl transition duration-300 shadow-sm active:scale-95">
+                                            Add to Cart
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    {% empty %}
+                        <div class="col-span-full bg-white text-center py-20 rounded-2xl border border-dashed border-gray-200 shadow-sm">
+                            <span class="text-5xl">🔍</span>
+                            <h3 class="mt-4 text-base font-bold text-slate-900">No active products match selection</h3>
+                            <p class="mt-1 text-xs text-gray-400 max-w-xs mx-auto">Try resetting workspace properties or check back later.</p>
+                            <a href="{% url 'product_list' %}" class="inline-block mt-6 px-5 py-2.5 bg-slate-900 text-white font-bold text-xs rounded-xl shadow transition">Reset Workspace Store</a>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <section class="max-w-7xl mx-auto px-4 pb-16 grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-gradient-to-r from-sky-100 to-indigo-50 p-8 rounded-2xl border border-sky-100 flex items-center justify-between min-h-[160px] bg-cover bg-center" style="background-image: linear-gradient(to right, rgba(224,242,254,0.95), rgba(240,246,255,0.7)), url('https://images.unsplash.com/photo-1524758631624-e2822e304c36?q=80&w=400');">
+            <div class="space-y-1">
+                <span class="text-[10px] font-bold text-sky-600 uppercase tracking-widest">Brutal Sale!</span>
+                <h3 class="text-xl font-black text-slate-900">Get the deal in here<br><span class="text-indigo-600">Living Room Chair</span></h3>
+                <a href="?category=home-kitchen" class="inline-block bg-rose-500 hover:bg-rose-600 text-white text-[10px] font-bold px-4 py-2 rounded-lg mt-2 uppercase transition shadow">Shop Now</a>
+            </div>
+        </div>
+        <div class="bg-gradient-to-r from-purple-100 to-pink-50 p-8 rounded-2xl border border-purple-100 flex items-center justify-between min-h-[160px] bg-cover bg-center" style="background-image: linear-gradient(to right, rgba(243,232,255,0.95), rgba(253,242,248,0.7)), url('https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=400');">
+            <div class="space-y-1">
+                <span class="text-[10px] font-bold text-purple-600 uppercase tracking-widest">Brutal Sale!</span>
+                <h3 class="text-xl font-black text-slate-900">Discount Everyday<br><span class="text-purple-600">Office Outfit</span></h3>
+                <a href="?category=apparel" class="inline-block bg-rose-500 hover:bg-rose-600 text-white text-[10px] font-bold px-4 py-2 rounded-lg mt-2 uppercase transition shadow">Shop Now</a>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        (function() {
+            // Set countdown limit to 2 days from the current point
+            const targetTime = new Date().getTime() + (2 * 24 * 60 * 60 * 1000);
+            
+            function updateClock() {
+                const now = new Date().getTime();
+                const distance = targetTime - now;
+                
+                if (distance < 0) {
+                    clearInterval(intervalId);
+                    return;
+                }
+                
+                const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+                
+                document.getElementById('days-node').innerText = days;
+                document.getElementById('hours-node').innerText = hours < 10 ? '0' + hours : hours;
+                document.getElementById('minutes-node').innerText = minutes < 10 ? '0' + minutes : minutes;
+                document.getElementById('seconds-node').innerText = seconds < 10 ? '0' + seconds : seconds;
+            }
+            
+            updateClock();
+            const intervalId = setInterval(updateClock, 1000);
+        })();
+    </script>
+</body>
+</html>
